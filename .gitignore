@@ -1,0 +1,5 @@
+node_modules/
+build/
+assets/icon.ico
+*.log
+.DS_Store

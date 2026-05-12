@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OI Desktop</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    overflow: hidden;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  .popover {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    height: 100%;
+    padding: 0 14px;
+    background: rgba(26, 26, 36, 0.94);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0,0,0,0.3);
+  }
+
+  .icon {
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    opacity: 0.5;
+  }
+
+  #query {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: rgba(255, 255, 255, 0.92);
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+    font-size: 15px;
+    font-weight: 400;
+    letter-spacing: 0.01em;
+    caret-color: #a78bfa;
+    -webkit-user-select: text;
+    user-select: text;
+  }
+
+  #query::placeholder {
+    color: rgba(255, 255, 255, 0.28);
+  }
+
+  .hint {
+    flex-shrink: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.22);
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+  }
+</style>
+</head>
+<body>
+<div class="popover">
+  <!-- Magnifier icon -->
+  <svg class="icon" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="9" cy="9" r="5.5" stroke="white" stroke-width="1.5"/>
+    <line x1="13.2" y1="13.2" x2="17" y2="17" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+  </svg>
+
+  <input
+    id="query"
+    type="text"
+    placeholder="Search Open WebUI…"
+    autocomplete="off"
+    spellcheck="false"
+  />
+
+  <span class="hint">↵ send</span>
+</div>
+
+<script>
+  const input = document.getElementById('query');
+
+  // Auto-focus when shown
+  window.addEventListener('focus', () => input.focus());
+  setTimeout(() => input.focus(), 50);
+
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      const q = input.value.trim();
+      if (q) window.electronAPI.submitQuery(q);
+    }
+    if (e.key === 'Escape') {
+      window.electronAPI.closePopover();
+    }
+  });
+</script>
+</body>
+</html>

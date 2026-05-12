@@ -1,0 +1,68 @@
+{
+  "name": "oi-desktop",
+  "version": "1.0.0",
+  "description": "OI Desktop – Open WebUI desktop wrapper for macOS",
+  "main": "main.js",
+  "scripts": {
+    "postinstall": "node scripts/generate-icon.js",
+    "start": "electron .",
+    "build": "electron-builder --mac"
+  },
+  "build": {
+    "appId": "net.nailhome.oidesktop",
+    "productName": "OI Desktop",
+    "files": [
+      "main.js",
+      "config.js",
+      "popover.html",
+      "wizard.html",
+      "settings.html",
+      "preload.js",
+      "preload-ui.js",
+      "preload-main.js",
+      "mcp-server.js",
+      "assets/**"
+    ],
+    "mac": {
+      "icon": "assets/icon.png",
+      "category": "public.app-category.productivity",
+      "hardenedRuntime": false,
+      "target": [
+        { "target": "dmg", "arch": ["arm64", "x64"] }
+      ]
+    },
+    "win": {
+      "icon": "assets/icon.ico",
+      "target": [
+        { "target": "nsis", "arch": ["x64"] }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "OI Desktop"
+    },
+    "dmg": {
+      "title": "OI Desktop",
+      "window": {
+        "width": 540,
+        "height": 360
+      },
+      "iconSize": 120,
+      "iconTextSize": 13,
+      "contents": [
+        { "x": 150, "y": 170, "type": "file" },
+        { "x": 390, "y": 170, "type": "link", "path": "/Applications" }
+      ]
+    },
+    "directories": {
+      "output": "build"
+    }
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.1.8"
+  }
+}

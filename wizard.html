@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Setup – Open WebUI Desktop</title>
+<style>
+  :root {
+    --bg:      #0d0d0d;
+    --card:    #171717;
+    --border:  rgba(255,255,255,.08);
+    --accent:  #4f46e5;
+    --accent2: #6366f1;
+    --text:    #f4f4f5;
+    --muted:   #71717a;
+    --ok:      #22c55e;
+    --err:     #ef4444;
+    --radius:  12px;
+    --font: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    width: 100%; height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    -webkit-font-smoothing: antialiased;
+    user-select: none;
+    overflow: hidden;
+  }
+
+  /* Slide container */
+  .deck {
+    display: flex;
+    width: 300%;
+    height: 100%;
+    transition: transform .4s cubic-bezier(.4,0,.2,1);
+  }
+  .deck.step-1 { transform: translateX(0); }
+  .deck.step-2 { transform: translateX(-33.333%); }
+  .deck.step-3 { transform: translateX(-66.666%); }
+
+  .slide {
+    width: 33.333%;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 44px 40px 36px;
+    gap: 0;
+  }
+
+  /* ── Step 1 – Welcome ───────────────────────── */
+  .logo-wrap {
+    width: 88px; height: 88px;
+    border-radius: 22px;
+    overflow: hidden;
+    margin-bottom: 28px;
+    box-shadow: 0 8px 32px rgba(0,0,0,.6);
+  }
+  .logo-wrap img { width: 100%; height: 100%; object-fit: cover; }
+
+  h1 {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -.3px;
+    text-align: center;
+    margin-bottom: 10px;
+  }
+  .subtitle {
+    font-size: 14px;
+    color: var(--muted);
+    text-align: center;
+    line-height: 1.6;
+    max-width: 300px;
+    margin-bottom: 36px;
+  }
+
+  /* ── Step 2 – Configure ─────────────────────── */
+  .field-group {
+    width: 100%;
+    margin-bottom: 14px;
+  }
+  label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .04em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  input[type="text"], input[type="url"] {
+    width: 100%;
+    padding: 11px 14px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 14px;
+    outline: none;
+    transition: border-color .15s;
+    -webkit-user-select: text;
+    user-select: text;
+  }
+  input:focus { border-color: var(--accent2); }
+
+  .status-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 20px;
+    margin-bottom: 20px;
+    font-size: 13px;
+    min-height: 20px;
+  }
+  .dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--border);
+    flex-shrink: 0;
+  }
+  .dot.ok  { background: var(--ok); }
+  .dot.err { background: var(--err); }
+  .dot.spin {
+    background: var(--accent2);
+    animation: pulse .8s ease-in-out infinite alternate;
+  }
+  @keyframes pulse { to { opacity: .3; } }
+
+  /* ── Buttons ───────────────────────────────── */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 28px;
+    border-radius: 9px;
+    font-family: var(--font);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: opacity .15s, transform .1s;
+    text-decoration: none;
+  }
+  .btn:active { transform: scale(.97); }
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+    width: 100%;
+  }
+  .btn-primary:hover { opacity: .9; }
+  .btn-primary:disabled { opacity: .4; cursor: default; transform: none; }
+  .btn-ghost {
+    background: transparent;
+    color: var(--muted);
+    font-size: 13px;
+    padding: 8px 0;
+    margin-top: 4px;
+  }
+  .btn-ghost:hover { color: var(--text); }
+
+  .btn-row {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+
+  /* ── Step 3 – Done ──────────────────────────── */
+  .check-ring {
+    width: 72px; height: 72px;
+    border-radius: 50%;
+    background: rgba(34,197,94,.12);
+    border: 2px solid var(--ok);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 24px;
+    animation: pop .35s cubic-bezier(.175,.885,.32,1.275) both;
+  }
+  @keyframes pop { from { transform: scale(.5); opacity: 0; } }
+  .check-ring svg { color: var(--ok); }
+
+  /* ── Progress dots ─────────────────────────── */
+  .progress {
+    position: fixed;
+    bottom: 22px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 6px;
+    z-index: 10;
+  }
+  .pdot {
+    width: 6px; height: 6px;
+    border-radius: 3px;
+    background: var(--border);
+    transition: background .25s, width .25s;
+  }
+  .pdot.active {
+    background: var(--accent2);
+    width: 18px;
+  }
+</style>
+</head>
+<body>
+
+<div class="deck step-1" id="deck">
+
+  <!-- ── Step 1: Welcome ─────────────────────── -->
+  <div class="slide">
+    <div class="logo-wrap">
+      <img src="assets/icon.png" alt="Open WebUI">
+    </div>
+    <h1>Welcome to Open WebUI Desktop</h1>
+    <p class="subtitle">A native macOS wrapper for your Open WebUI instance — with a menu-bar quick-search and global hotkey.</p>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="go(2)">Get Started →</button>
+    </div>
+  </div>
+
+  <!-- ── Step 2: Configure ───────────────────── -->
+  <div class="slide">
+    <h1 style="margin-bottom:8px">Connect to Open WebUI</h1>
+    <p class="subtitle" style="margin-bottom:24px">Enter the URL of your Open WebUI instance. This can be a local server or a hosted URL.</p>
+
+    <div class="field-group">
+      <label>Open WebUI URL</label>
+      <input type="url" id="url-input"
+        placeholder="https://ai.example.com"
+        spellcheck="false" autocomplete="off">
+    </div>
+
+    <div class="status-row" id="status-row">
+      <div class="dot" id="status-dot"></div>
+      <span id="status-text" style="color:var(--muted)">Enter a URL to test the connection</span>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-primary" id="test-btn" onclick="testConn()">Test Connection</button>
+      <button class="btn btn-ghost" id="skip-btn" onclick="go(3)" style="display:none">Skip &amp; continue anyway</button>
+      <button class="btn btn-ghost" onclick="go(1)">← Back</button>
+    </div>
+  </div>
+
+  <!-- ── Step 3: Done ────────────────────────── -->
+  <div class="slide">
+    <div class="check-ring">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="20 6 9 17 4 12"/>
+      </svg>
+    </div>
+    <h1>You're all set!</h1>
+    <p class="subtitle" style="margin-bottom:32px">Open WebUI Desktop is configured and ready. You can change these settings any time from the menu bar.</p>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="launch()">Launch Open WebUI →</button>
+    </div>
+  </div>
+
+</div>
+
+<div class="progress">
+  <div class="pdot active" id="p0"></div>
+  <div class="pdot"        id="p1"></div>
+  <div class="pdot"        id="p2"></div>
+</div>
+
+<script>
+  let currentStep = 1;
+  let confirmed = false;
+  let savedUrl = '';
+
+  const deck    = document.getElementById('deck');
+  const urlInput = document.getElementById('url-input');
+  const statusDot  = document.getElementById('status-dot');
+  const statusText = document.getElementById('status-text');
+  const testBtn  = document.getElementById('test-btn');
+  const skipBtn  = document.getElementById('skip-btn');
+
+  window.addEventListener('focus', () => urlInput.focus());
+
+  // Pre-fill URL from saved config
+  window.api.getConfig().then(cfg => {
+    if (cfg.url) urlInput.value = cfg.url;
+  });
+
+  function go(step) {
+    currentStep = step;
+    deck.className = `deck step-${step}`;
+    ['p0','p1','p2'].forEach((id, i) => {
+      document.getElementById(id).className = 'pdot' + (i === step - 1 ? ' active' : '');
+    });
+    if (step === 2) setTimeout(() => urlInput.focus(), 420);
+  }
+
+  urlInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') testConn();
+  });
+
+  urlInput.addEventListener('input', () => {
+    confirmed = false;
+    setStatus('idle', 'Enter a URL to test the connection');
+    skipBtn.style.display = 'none';
+    testBtn.textContent = 'Test Connection';
+  });
+
+  function setStatus(state, msg) {
+    statusDot.className  = 'dot' + (state !== 'idle' ? ' ' + state : '');
+    statusText.textContent = msg;
+    statusText.style.color = state === 'ok'  ? 'var(--ok)'
+                           : state === 'err' ? 'var(--err)'
+                           : 'var(--muted)';
+  }
+
+  async function testConn() {
+    const url = urlInput.value.trim();
+    if (!url) { setStatus('err', 'Please enter a URL'); return; }
+    if (!/^https?:\/\//i.test(url)) { setStatus('err', 'URL must start with http:// or https://'); return; }
+
+    testBtn.disabled = true;
+    setStatus('spin', 'Testing connection…');
+    skipBtn.style.display = 'none';
+
+    try {
+      const result = await window.api.testUrl(url);
+      if (result.ok) {
+        savedUrl = url;
+        confirmed = true;
+        setStatus('ok', `Connected — HTTP ${result.status}`);
+        testBtn.textContent = 'Continue →';
+        testBtn.disabled = false;
+        testBtn.onclick = () => finishSetup();
+      } else {
+        setStatus('err', result.error || `HTTP ${result.status}`);
+        testBtn.textContent = 'Retry';
+        testBtn.disabled = false;
+        skipBtn.style.display = '';
+      }
+    } catch (e) {
+      setStatus('err', e.message || 'Unknown error');
+      testBtn.textContent = 'Retry';
+      testBtn.disabled = false;
+      skipBtn.style.display = '';
+    }
+  }
+
+  async function finishSetup() {
+    const url = savedUrl || urlInput.value.trim();
+    await window.api.wizardDone({ url });
+    go(3);
+  }
+
+  // Skip button also saves URL even without test
+  document.getElementById('skip-btn').onclick = async () => {
+    const url = urlInput.value.trim();
+    if (url) await window.api.wizardDone({ url });
+    go(3);
+  };
+
+  async function launch() {
+    await window.api.wizardDone({ launch: true });
+  }
+</script>
+</body>
+</html>
