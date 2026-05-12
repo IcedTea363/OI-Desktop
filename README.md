@@ -26,31 +26,23 @@ No cloud dependency. No subscription. Connect it to your own Open WebUI and go.
 
 ## Screenshots
 
-> **macOS — Main Window**
+<img src="assets/screenshots/main-window.png" alt="OI Desktop main window" width="100%" />
 
-<!-- Replace with: assets/screenshots/main-window.png -->
-> *Screenshot coming soon — run `screencapture -x assets/screenshots/main-window.png` after granting Terminal screen recording access in System Settings → Privacy & Security.*
+<br>
 
----
+<div align="center">
+  <img src="assets/screenshots/quick-search.png" alt="Quick-search popover" width="60%" />
+  <p><em>Global hotkey (⌘⇧Space) or tray click opens the quick-search popover from anywhere</em></p>
+</div>
 
-> **Menu-bar Quick Search**
+<br>
 
-<!-- Replace with: assets/screenshots/quick-search.png -->
-> *Single-click the tray icon (or press ⌘⇧Space from anywhere) to open the quick-search popover.*
-
----
-
-> **Setup Wizard**
-
-<!-- Replace with: assets/screenshots/wizard.png -->
-> *On first launch, a setup wizard guides you to connect your Open WebUI URL.*
-
----
-
-> **Preferences**
-
-<!-- Replace with: assets/screenshots/preferences.png -->
-> *Preferences panel — change URL, theme, and view your local MCP server address.*
+<div align="center">
+  <img src="assets/screenshots/wizard.png" alt="Setup wizard" width="48%" />
+  &nbsp;
+  <img src="assets/screenshots/preferences.png" alt="Preferences" width="48%" />
+  <p><em>First-run setup wizard &nbsp;·&nbsp; Preferences panel</em></p>
+</div>
 
 ---
 

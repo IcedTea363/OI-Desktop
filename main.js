@@ -58,10 +58,19 @@ function createMainWindow() {
   );
   if (!onScreen) { delete bounds.x; delete bounds.y; }
 
+  // On macOS: hide the title bar so Open WebUI's own header fills edge-to-edge.
+  // 'customButtonsOnHover' keeps traffic lights invisible until you hover the
+  // top-left corner — same pattern Perplexity and Notion use.
+  // On Windows/Linux: keep the native frame.
+  const macOSTitleBar = process.platform === 'darwin'
+    ? { titleBarStyle: 'customButtonsOnHover', trafficLightPosition: { x: 12, y: 18 } }
+    : {};
+
   mainWindow = new BrowserWindow({
     ...bounds,
     title: config.get('appName') || 'Open WebUI',
     icon: ICON_PATH,
+    ...macOSTitleBar,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -77,9 +86,15 @@ function createMainWindow() {
   mainWindow.on('resize', saveBounds);
   mainWindow.on('move',   saveBounds);
 
+  // Forward [OI Desktop] console messages from the webview to the main log
+  mainWindow.webContents.on('console-message', (_e, _level, message) => {
+    if (message.includes('[OI Desktop')) console.log(message);
+  });
+
   // Inject "⌨ iTerm2" run-buttons on every page load
   mainWindow.webContents.on('did-finish-load', () => {
     injectTerminalButtons();
+    injectTopInsetCSS();
     setDockIcon();
   });
 
@@ -305,6 +320,25 @@ const TERMINAL_INJECT = `(function() {
   if (window.__oidTermInjected) return;
   window.__oidTermInjected = true;
 
+  // On macOS with hiddenInset title bar the very top strip of the window is
+  // the drag region. Inject a transparent overlay so the user can drag the
+  // window by clicking anywhere on Open WebUI's top nav bar.
+  if (navigator.platform.startsWith('Mac')) {
+    const drag = document.createElement('div');
+    drag.id = 'oid-drag-region';
+    Object.assign(drag.style, {
+      position:  'fixed',
+      top:       '0',
+      left:      '80px',   // leave room for traffic-light buttons (≈76px wide)
+      right:     '0',
+      height:    '40px',
+      zIndex:    '9999',
+      webkitAppRegion: 'drag',
+      pointerEvents: 'none',  // let clicks fall through to Open WebUI
+    });
+    document.documentElement.appendChild(drag);
+  }
+
   const SHELL = new Set(['bash','shell','sh','zsh','fish','console','terminal','ps1','powershell']);
 
   const style = document.createElement('style');
@@ -388,36 +422,115 @@ function injectTerminalButtons() {
   mainWindow.webContents.executeJavaScript(TERMINAL_INJECT).catch(() => {});
 }
 
+// On macOS with no title bar, inject CSS to push Open WebUI's sidebar down
+// so its logo/header clears the invisible traffic-light button zone (~76px wide, ~40px tall).
+function injectTopInsetCSS() {
+  if (process.platform !== 'darwin' || !mainWindow || mainWindow.isDestroyed()) return;
+  const css = `
+    /* [OI Desktop] macOS traffic-light safe area */
+    #sidebar {
+      padding-top: 32px !important;
+    }
+  `;
+  mainWindow.webContents.insertCSS(css).catch(() => {});
+}
+
 // ── Query injection ────────────────────────────────────────────────────────────
 const INJECT_JS = (query) => `
 (async () => {
   const q = ${JSON.stringify(query)};
-  for (let i = 0; i < 30; i++) {
-    const ta =
-      document.querySelector('#chat-input') ||
-      document.querySelector('textarea[data-testid="message-input"]') ||
-      document.querySelector('textarea[placeholder]') ||
-      document.querySelector('textarea');
-    if (ta) {
-      ta.focus();
-      const desc = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value');
-      desc.set.call(ta, q);
-      ta.dispatchEvent(new Event('input',  { bubbles: true }));
-      ta.dispatchEvent(new Event('change', { bubbles: true }));
-      await new Promise(r => setTimeout(r, 250));
-      const btn =
-        document.querySelector('button[aria-label="Send message"]') ||
-        document.querySelector('button[aria-label*="send" i]') ||
-        document.querySelector('button[type="submit"]') ||
-        document.querySelector('[data-testid="send-message-button"]');
-      if (btn && !btn.disabled) btn.click();
-      else ta.dispatchEvent(new KeyboardEvent('keydown', {
-        key: 'Enter', code: 'Enter', keyCode: 13, bubbles: true, cancelable: true,
-      }));
+  const log = m => console.log('[OI Desktop inject] ' + m);
+
+  function fillTextarea(el, val) {
+    el.focus();
+    const proto = el.tagName === 'TEXTAREA'
+      ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
+    const desc = Object.getOwnPropertyDescriptor(proto, 'value');
+    if (desc && desc.set) desc.set.call(el, val); else el.value = val;
+    el.dispatchEvent(new InputEvent('input',  { bubbles: true, data: val }));
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+
+  function fillContentEditable(el, val) {
+    el.focus();
+    // Set content directly then fire a native-style InputEvent.
+    // Svelte's bind:innerHTML/textContent reacts to this event type.
+    el.textContent = val;
+    // Move cursor to end so the send button enables
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    range.collapse(false);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    el.dispatchEvent(new InputEvent('input', {
+      bubbles: true, cancelable: false,
+      inputType: 'insertText', data: val,
+    }));
+  }
+
+  function findSendButton() {
+    return document.querySelector('button[aria-label="Send message"]')
+        || document.querySelector('button[aria-label*="send" i]')
+        || document.querySelector('[data-testid="send-message-button"]')
+        || [...document.querySelectorAll('button')].find(b =>
+              !b.disabled && /send/i.test(b.getAttribute('aria-label') || ''))
+        || document.querySelector('button[type="submit"]');
+  }
+
+  for (let i = 0; i < 40; i++) {
+    // textarea / input  (older Open WebUI)
+    const ta = document.querySelector('textarea#chat-input')
+            || document.querySelector('textarea[data-testid="message-input"]')
+            || document.querySelector('textarea[placeholder]')
+            || document.querySelector('textarea');
+
+    // contenteditable — Open WebUI uses "plaintext-only", not "true",
+    // so match the attribute name only, not its value
+    const ce = ta ? null
+             : document.querySelector('#chat-input[contenteditable]')
+            || document.querySelector('[contenteditable][data-testid]')
+            || document.querySelector('div[contenteditable]')
+            || document.querySelector('p[contenteditable]')
+            || document.querySelector('[role="textbox"]');
+
+    const el = ta || ce;
+    if (el) {
+      log('Found: <' + el.tagName.toLowerCase()
+        + (el.id ? ' id=' + el.id : '')
+        + ' contenteditable=' + el.getAttribute('contenteditable') + '>');
+
+      if (ta) fillTextarea(el, q);
+      else    fillContentEditable(el, q);
+
+      await new Promise(r => setTimeout(r, 400));
+      log('Content after fill: "' + (el.textContent || el.value || '').slice(0, 60) + '"');
+
+      const btn = findSendButton();
+      log('Send btn: ' + (btn ? btn.outerHTML.slice(0, 80) + ' disabled=' + btn.disabled : 'NOT FOUND'));
+
+      if (btn && !btn.disabled) {
+        btn.click();
+        log('Clicked send button');
+      } else {
+        el.dispatchEvent(new KeyboardEvent('keydown', {
+          key: 'Enter', code: 'Enter', keyCode: 13, bubbles: true, cancelable: true,
+        }));
+        log('Dispatched Enter keydown');
+      }
       return;
     }
+
+    if (i % 5 === 0) log('Waiting for input… attempt ' + i);
     await new Promise(r => setTimeout(r, 200));
   }
+
+  // Dump DOM info so we can diagnose the selector miss
+  log('FAILED after 8s. contenteditable els: ['
+    + [...document.querySelectorAll('[contenteditable]')]
+        .map(e => e.tagName + (e.id ? '#' + e.id : '') + '[' + e.getAttribute('contenteditable') + ']')
+        .join(', ') + ']');
+  log('textareas: ' + document.querySelectorAll('textarea').length);
 })();
 `;
 
