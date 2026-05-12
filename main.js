@@ -422,14 +422,44 @@ function injectTerminalButtons() {
   mainWindow.webContents.executeJavaScript(TERMINAL_INJECT).catch(() => {});
 }
 
-// On macOS with no title bar, inject CSS to push Open WebUI's sidebar down
-// so its logo/header clears the invisible traffic-light button zone (~76px wide, ~40px tall).
+// On macOS with no title bar, push Open WebUI's sidebar content down so the
+// logo clears the invisible traffic-light zone. We constrain the sidebar to
+// 100vh with box-sizing:border-box so the padding is absorbed *inside* the
+// existing height rather than growing the scrollable area and hiding the
+// user-profile button at the bottom.
 function injectTopInsetCSS() {
   if (process.platform !== 'darwin' || !mainWindow || mainWindow.isDestroyed()) return;
   const css = `
-    /* [OI Desktop] macOS traffic-light safe area */
+    /* [OI Desktop] macOS traffic-light safe area ─────────────────────────────
+       padding-top with box-sizing:border-box keeps the inset inside 100vh
+       so no overflow occurs. Applies to both expanded and collapsed states. */
+
     #sidebar {
-      padding-top: 32px !important;
+      height: 100vh !important;
+      box-sizing: border-box !important;
+      padding-top: 46px !important;
+      overflow: hidden !important;
+    }
+
+    /* Open WebUI's inner wrapper sets its own h-screen / height:100vh.
+       Override it so it fills our padded box rather than the full viewport,
+       keeping the profile button visible at the bottom. */
+    #sidebar > div:first-child {
+      height: 100% !important;
+    }
+
+    /* The chat-history pane handles its own scrolling — restore it. */
+    #sidebar .overflow-y-auto {
+      overflow-y: auto !important;
+      flex: 1 1 0% !important;
+      min-height: 0 !important;
+    }
+
+    /* Push the model-selector button away from the left edge so it
+       doesn't crowd the traffic-light hover zone. The nav's first-child
+       flex row already has pl-1.5; we give it a bit more room. */
+    nav.sticky > div:first-child {
+      padding-left: 16px !important;
     }
   `;
   mainWindow.webContents.insertCSS(css).catch(() => {});

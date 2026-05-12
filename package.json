@@ -1,6 +1,6 @@
 {
   "name": "oi-desktop",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "OI Desktop – Open WebUI desktop wrapper for macOS",
   "main": "main.js",
   "scripts": {
